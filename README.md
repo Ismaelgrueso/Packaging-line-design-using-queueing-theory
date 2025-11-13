@@ -1,57 +1,66 @@
-# Diseño de *packing lines* con Teoría de Colas (Allen–Cunneen, G/G/m)
+# Diseño de líneas de packing con teoría de colas
 
-Este cuaderno de Jupyter compara dos diseños de una zona de **packing** usando la aproximación de **Allen–Cunneen** (modelo **G/G/m**: *General arrivals / General service / m servers*). El objetivo es estimar el **tiempo medio de espera en cola** (`t_q`) y ver cómo cambia con la **variabilidad del proceso** (`CVP`).
-
-- **Solución 1 (SOL1)**: **cola única → m estaciones en paralelo** (por defecto, `m=2`).
-- **Solución 2 (SOL2)**: **k líneas dedicadas** (por defecto, `k=2`) con **reparto** del flujo, por ejemplo `[0.3, 0.7]`.
-
-> Lectura de negocio: menor `t_q` ⇒ menor **CT** (*cycle time*), menor **WIP** (*work in process*, Ley de Little), mejor **servicio** y menos congestión.
+Este repositorio incluye un cuaderno de Jupyter donde se compara el rendimiento de dos diseños de una zona de packing utilizando teoría de colas.  
+El objetivo es ayudar a decidir si es más conveniente trabajar con **una cola única que alimenta varias estaciones** o con **varias colas dedicadas**, en función de la variabilidad del proceso.
 
 ---
 
-## Fórmula (Allen–Cunneen)
+## 1. ¿Qué hace el cuaderno?
 
-$$
-t_q \approx \frac{C_a^2 + C_s^2}{2}\;\cdot\;
-\frac{\rho^{\sqrt{2(m+1)}-1}}{m(1-\rho)}\;\cdot s
-$$
+De forma resumida, el cuaderno:
 
-**Donde:**
-- `m`: nº de estaciones en paralelo.
-- `s = 1/μ`: tiempo medio de servicio (`t_p`).
-- `ρ = λ / (m μ)`: **utilización (u)** = carga/capacidad (**debe ser < 1**).
-- `C_a`: coef. de variación de **llegadas** (`CVA`).
-- `C_s`: coef. de variación de **servicio/proceso** (`CVP`).
+1. Plantea un escenario de packing (llegadas de pedidos y capacidad de proceso de las estaciones).
+2. Calcula el **tiempo medio de espera en cola** para dos diseños:
+   - **Solución 1**: una cola única que alimenta varias estaciones en paralelo.
+   - **Solución 2**: varias líneas con colas dedicadas, cada una con su propia estación.
+3. Repite el cálculo para distintos niveles de **variabilidad del proceso** (CVP).
+4. Devuelve:
+   - Una tabla con los resultados numéricos.
+   - Una gráfica que compara el tiempo de cola de cada solución.
 
-**Ley de Little**:
-- `WIP = λ · CT` y `CT = t_q + t_p`.
+La idea es que puedas ver cómo se comporta cada diseño cuando el proceso de packing es más o menos variable.
 
 ---
 
-## Qué contiene el cuaderno
+## 2. Cómo usar el cuaderno
 
-1. **Datos de línea**
-   - `ra`: tasa de llegadas (pedidos/min).
-   - `rp`: tasa de proceso por estación (pedidos/min).
-   - `ta` y `tp` están definidos, pero el cálculo usa `tp = 1/rp` para coherencia.
+1. Abre el cuaderno `.ipynb` en Jupyter Notebook o JupyterLab.
+2. Ejecuta todas las celdas en orden.
+3. Al final del cuaderno encontrarás:
+   - Una tabla con los valores calculados para cada nivel de variabilidad.
+   - Una gráfica donde se comparan las dos soluciones.
 
-2. **Funciones**
-   - `tq_allen_cunneen(ra, rp, m, CVA, CVP)`: calcula `t_q` para **G/G/m** con chequeo de estabilidad (`u<1`).
-   - `tq_s1(...)`: *wrapper* para **cola única → m estaciones** (por defecto `m=2`).
-   - `tq_s2(ra, ta, rp, tp, CVA, CVP, k=2, reparto=[...])`: **k líneas dedicadas**; calcula el `t_q` medio **ponderando** cada línea por su peso `w` (cada línea se evalúa como **G/G/1** con `λ_i = w_i · ra`).
-
-3. **Barrido de CVP**
-   - Se generan valores de `CVP` (en el notebook: `np.linspace(0, 3, 31)`), se calcula `t_q` para ambas soluciones y se construye un DataFrame con:
-     - `CVP`, `SOLUCION 1`, `SOLUCION 2` y `DIFERENCIA (min) = SOLUCION 2 − SOLUCION 1`.
-
-4. **Gráficas**
-   - Curvas `t_q` vs **CVP** para **SOL1** y **SOL2**.
+Con la configuración por defecto ya puedes ver un **caso base** sin tocar nada.
 
 ---
 
-## Requisitos
+## 3. Dónde debes poner atención si quieres cambiar el escenario
 
-```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install numpy pandas matplotlib notebook
+Si quieres adaptar el análisis a tu propio contexto, fíjate especialmente en:
+
+- La celda donde se definen los **parámetros del modelo**, por ejemplo:
+  - Tasa de llegadas de pedidos (`ra`).
+  - Capacidad de proceso por estación (`rp`).
+  - Número de estaciones en paralelo de la solución de cola única (`m`).
+  - Número de líneas dedicadas y reparto de carga entre ellas (`k` y `reparto`).
+  - Nivel de variabilidad de las llegadas (`CVA`) y del proceso (`CVP` o rango de CVP).
+
+- El rango de valores de **CVP** que se recorre para construir la tabla y la gráfica.  
+  Ajustando este rango puedes estudiar procesos con menos o más variabilidad.
+
+> Importante: si al modificar parámetros aparecen tiempos de cola muy grandes o “infinitos”, significa que la utilización del sistema es demasiado alta (la línea está sobrecargada y la cola tiende a crecer sin límite).
+
+---
+
+## 4. Cómo interpretar los resultados
+
+- La tabla de resultados te muestra, para cada nivel de variabilidad (CVP):
+  - El tiempo medio de espera en cola de la **Solución 1 (cola única)**.
+  - El tiempo medio de espera de la **Solución 2 (colas dedicadas)**.
+  - La diferencia entre ambas.
+
+- La gráfica te permite ver de un vistazo:
+  - En qué zona de variabilidad la cola única con varias estaciones se comporta mejor.
+  - En qué medida las colas dedicadas penalizan el tiempo de espera cuando el proceso es más variable.
+
+En resumen, este cuaderno es una **herramienta de exploración**: te permite jugar con los parámetros de tu proceso de packing y entender qué diseño de línea es más robusto cuando la variabilidad aumenta.
