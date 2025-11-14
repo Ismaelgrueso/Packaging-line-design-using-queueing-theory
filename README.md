@@ -3,6 +3,8 @@
 Este repositorio incluye un cuaderno de Jupyter donde se compara el rendimiento de dos diseños de una zona de packing utilizando teoría de colas.  
 El objetivo es ayudar a decidir si es más conveniente trabajar con **una cola única que alimenta varias estaciones** o con **varias colas dedicadas**, en función de la variabilidad del proceso.
 
+Puedes consultar el articulo en el que se explica más en detalle el caso aquí: https://ismaelgrueso.substack.com/p/diseno-linea-de-packing-para-e-commerce?r=2qll4o
+
 ---
 
 ## 1. ¿Qué hace el cuaderno?
